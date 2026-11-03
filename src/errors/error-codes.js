@@ -1,0 +1,6 @@
+export const ERROR_CODES = Object.freeze({
+  INTERNAL_ERROR: 1000,
+  INVALID_ORG_ID: 1001,
+  NOT_FOUND: 1002,
+  INVALID_REQUEST: 1003,
+});
