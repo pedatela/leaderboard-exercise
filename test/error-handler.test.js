@@ -49,14 +49,11 @@ describe.each([
     expect(res.status).toBe(500);
     expect(res.body).toEqual({ data: {}, error: true, code: 1000, msg: 'Internal server error.' });
     expect(log).toHaveBeenCalledTimes(1);
-    const record = JSON.parse(log.mock.calls[0][0]);
-    expect(record).toMatchObject({
-      event: 'request_completed',
-      level: 'error',
-      status_code: 500,
-      error_code: 1000,
-      error_type: 'Error',
-    });
+    const record = log.mock.calls[0][0];
+    expect(record).toContain('ERROR [HTTP] request_completed');
+    expect(record).toContain('status_code=500');
+    expect(record).toContain('error_code=1000');
+    expect(record).toContain('error_type="Error"');
     expect(log.mock.calls[0][0]).not.toContain('Private database details');
     expect(log.mock.calls[0][0]).not.toContain('private_database_code');
   });

@@ -7,11 +7,24 @@ import { requestLogger } from '../src/middleware/request-logger.js';
 import { RosterService } from '../src/service/roster.service.js';
 
 let logs;
+let lines;
 
 beforeEach(() => {
   logs = [];
+  lines = [];
   for (const level of ['info', 'warn', 'error']) {
-    jest.spyOn(console, level).mockImplementation((line) => logs.push(JSON.parse(line)));
+    jest.spyOn(console, level).mockImplementation((line) => {
+      lines.push(line);
+      const match = line.match(/^\[Nest\] (\d+)  - (\S+)\s+(LOG|WARN|ERROR) \[(HTTP|Bootstrap|Application)\] (\S+)(.*)$/);
+      expect(match).not.toBeNull();
+      expect(Number(match[1])).toBe(process.pid);
+      expect(match[3]).toBe(level === 'info' ? 'LOG' : level.toUpperCase());
+      const entry = { timestamp: match[2], level, event: match[5] };
+      for (const field of match[6].matchAll(/(\w+)=("(?:\\.|[^"\\])*"|-?\d+(?:\.\d+)?(?:e[+-]?\d+)?)/gi)) {
+        entry[field[1]] = JSON.parse(field[2]);
+      }
+      logs.push(entry);
+    });
   }
 });
 
@@ -31,6 +44,7 @@ it('logs a completed request once with duration and a server-generated request I
   expect(logs[0].request_id).toMatch(/^[0-9a-f-]{36}$/);
   expect(logs[0].duration_ms).toBeGreaterThanOrEqual(0);
   expect(Number.isFinite(Date.parse(logs[0].timestamp))).toBe(true);
+  expect(lines[0]).toContain('[HTTP] request_completed');
 });
 
 it('logs validation errors at warn level using the route template', async () => {
@@ -109,4 +123,16 @@ it('ignores unsupported fields and circular objects in application logs', () => 
   expect(logs[0]).toEqual({
     timestamp: expect.any(String), level: 'info', event: 'server_started', port: 3001,
   });
+  expect(lines[0]).toContain('LOG [Bootstrap] server_started port=3001');
+  expect(lines[0]).not.toContain('private');
+});
+
+it('escapes control characters in messages and allowed metadata', () => {
+  logger.warn('custom\nevent', { route: '/path\nforged\r\u001b[31m', password: 'private' });
+
+  expect(lines).toHaveLength(1);
+  expect(lines[0]).toContain('[Application] custom\\nevent');
+  expect(logs[0].route).toBe('/path\nforged\r\u001b[31m');
+  expect(lines[0]).not.toMatch(/[\n\r\u001b]/);
+  expect(lines[0]).not.toContain('private');
 });

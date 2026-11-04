@@ -11,11 +11,11 @@ const allowedFields = new Set([
 ]);
 
 function write(level, event, metadata = {}) {
-  const entry = {
-    timestamp: new Date().toISOString(),
-    level,
-    event,
-  };
+  const timestamp = new Date().toISOString();
+  const label = level === "info" ? "LOG" : level.toUpperCase();
+  const context = event.startsWith("request_") ? "HTTP"
+    : event === "server_started" ? "Bootstrap" : "Application";
+  const fields = [];
 
   for (const [key, value] of Object.entries(metadata)) {
     if (
@@ -23,11 +23,15 @@ function write(level, event, metadata = {}) {
       (typeof value === "string" ||
         (typeof value === "number" && Number.isFinite(value)))
     ) {
-      entry[key] = value;
+      fields.push(`${key}=${JSON.stringify(value)}`);
     }
   }
 
-  console[level](JSON.stringify(entry));
+  // Escape control characters so each event stays on one physical log line.
+  const message = JSON.stringify(event).slice(1, -1);
+  console[level](
+    `[Nest] ${process.pid}  - ${timestamp} ${label.padStart(7)} [${context}] ${[message, ...fields].join(" ")}`,
+  );
 }
 
 export const logger = {

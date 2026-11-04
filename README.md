@@ -35,7 +35,7 @@ If you cannot run Docker, any local Postgres 14+ works. Set `DATABASE_URL`.
 The API uses a shared JSON envelope for success and error responses; see
 [`docs/API_RESPONSES.md`](docs/API_RESPONSES.md) for the format and internal error codes.
 
-Backend logs are structured JSON with request IDs, status codes, and timings.
+Backend logs use a NestJS-style text format with request IDs, status codes, and timings.
 See [`docs/LOGGING.md`](docs/LOGGING.md) for fields and commands to view them.
 
 ## Client and Docker
