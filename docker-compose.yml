@@ -3,8 +3,10 @@ services:
     build:
       context: ./client
       dockerfile: Dockerfile
+    env_file:
+      - ./client/.env
     ports:
-      - "8080:80"
+      - "${CLIENT_PORT:-8080}:80"
     depends_on:
       - api
 
@@ -14,9 +16,13 @@ services:
       dockerfile: src/Dockerfile
     environment:
       PORT: 3001
-      DATABASE_URL: postgres://postgres:postgres@db:5432/remotebridge
+      PGHOST: db
+      PGPORT: 5432
+      PGUSER: ${PGUSER:?Set PGUSER in .env}
+      PGPASSWORD: ${PGPASSWORD:?Set PGPASSWORD in .env}
+      PGDATABASE: ${PGDATABASE:?Set PGDATABASE in .env}
     ports:
-      - "3001:3001"
+      - "${PORT:-3001}:3001"
     depends_on:
       db:
         condition: service_healthy
@@ -24,13 +30,13 @@ services:
   db:
     image: postgres:16
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: remotebridge
+      POSTGRES_USER: ${PGUSER:?Set PGUSER in .env}
+      POSTGRES_PASSWORD: ${PGPASSWORD:?Set PGPASSWORD in .env}
+      POSTGRES_DB: ${PGDATABASE:?Set PGDATABASE in .env}
     ports:
-      - "5433:5432"
+      - "${PGPORT:-5433}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      test: ["CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
       interval: 5s
       timeout: 5s
       retries: 10

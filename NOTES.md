@@ -8,6 +8,8 @@ Docker Compose. Run the commands below from the repository root.
 ### Prepare the development database
 
 ```bash
+cp .env.example .env
+cp client/.env.example client/.env
 npm ci
 docker compose up -d --wait db
 npm run db:reset
@@ -16,7 +18,8 @@ npm run db:reset
 `db:reset` **drops and recreates the application tables and reloads the seed**.
 Use it only with a disposable development database. The default host connection
 targets the Compose PostgreSQL service on port `5433`. To use another database,
-set `DATABASE_URL` in the process environment before running the API or scripts.
+set the `PG*` variables or `DATABASE_URL` in the root `.env` before running the
+API or scripts. Existing process variables take precedence over the file.
 
 The seed uses fixed dates in October and November 2026. The running application
 uses the real current time, so its results change over time and may eventually
@@ -37,6 +40,8 @@ docker compose up -d --build
 The client image builds the React app and serves the output with Nginx. Nginx
 forwards `/api/` requests to the API container, preserving the path. The API
 connects to PostgreSQL through `db:5432` and waits for the database health check.
+Compose reads credentials and published ports from the root `.env`; Nginx uses
+`API_UPSTREAM` from `client/.env`. The images do not contain either `.env` file.
 Starting the containers does not automatically create the tables or seed them.
 
 View backend logs with:
@@ -61,7 +66,8 @@ npm --prefix client run dev
 ```
 
 Open the Vite URL printed in the terminal, normally `http://localhost:5173`.
-Vite forwards `/api` requests to port `3001`. Do not run the local API and the
+Vite reads `DEV_PORT` and `API_PROXY_TARGET` from `client/.env` and forwards `/api`
+requests to port `3001` by default. Do not run the local API and the
 Compose API simultaneously on that port. `ORG_ID` is intentionally fixed to `1`
 in `client/src/App.jsx`, as requested by the exercise.
 

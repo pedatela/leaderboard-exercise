@@ -7,7 +7,7 @@
     "db:up": "docker compose up -d",
     "db:reset": "node scripts/reset-db.js",
     "start": "node src/server.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand"
+    "test": "node --import ./src/config/env.js --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand"
   },
   "jest": {
     "roots": ["<rootDir>/test"],
